@@ -1,0 +1,94 @@
+-----------------------------------
+-----------------------------------
+Docker:
+
+0)Docker install:
+just download dmg/tar/exe 
+
+1) Build docker image:
+docker build -t latest .
+
+2) List docker images
+docker images
+
+3) Run docker image:
+docker run -dp 8080:8080 {image_id}
+
+4) Docker running processes:
+docker ps
+
+5) Kill a specific process:
+docker kill {container_id}
+-----------------------------------
+-----------------------------------
+Minikube:
+
+0)Minikube install
+brew install minikube
+
+1) Register minikube docker env
+eval $(minikube -p minikube docker-env)
+
+2) Create the deployments file (just the first time, then edit the pull policy)
+kubectl create deployment worker-push-api-python --image=worker-push-api-python:latest -o yaml --dry-run > deployments.yaml
+
+3) Docker build:
+docker build -t latest .
+
+4) Apply the deployments:
+kubectl apply -f ./deployments.yaml   
+
+5) Port-Forwarding (in alternativa Service e load-balancing)
+kubectl port-forward deployment/worker-push-api-python 8080:8080 
+
+6) Retrieve pod id:
+kubectl get svc,pods -A -o wide
+
+7) Pod logs:
+kubectl logs -f {pod_id} (es.: worker-push-api-python-ff56c8b5f-6qgdn)
+-----------------------------------
+-----------------------------------
+Helm:
+
+1) Install Helm
+brew install helm
+-----------------------------------
+-----------------------------------
+Prometheus:
+
+1) Add prometheus repo:
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+2) Install Prometheus with Values-Prometheus.yaml file (into default namespace)
+helm install prometheus prometheus-community/prometheus --namespace default -f ./values-prometheus.yaml
+
+3) Exposing Prometheus web interface:
+kubectl port-forward service/prometheus-server 8089:80
+-----------------------------------
+-----------------------------------
+Grafana:
+
+1) Add stable repo:
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+
+2) Install Grafana(into default namespace)
+helm install grafana grafana/grafana
+
+3) Exposing Grafana:
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-np
+
+4) Retrieve Admin password(Grafana is password protected):
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+5) Exposing Grafana web interface:
+minikube service grafana-np
+
+6) Get Grafana url and port forwarding:
+export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana" -o jsonpath="{.items[0].metadata.name}")
+kubectl --namespace default port-forward $POD_NAME 3000
+
+&) Access Grafana UI (user "admin" and password retrieved on step 4):
+http://127.0.0.1:3000
+-----------------------------------

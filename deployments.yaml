@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: worker-push-api-python
+  name: worker-push-api-python
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-push-api-python
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+      labels:
+        app: worker-push-api-python
+    spec:
+      containers:
+      - image: worker-push-api-python:latest
+        name: worker-push-api-python
+        imagePullPolicy: Never
+        resources: {}
+status: {}
