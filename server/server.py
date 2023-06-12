@@ -3,7 +3,7 @@ import sys
 import time
 
 from flask import jsonify, request, Flask
-from prometheus_client import Counter, start_http_server
+from prometheus_client import Counter
 
 from server.backend_logger import get_logger
 from server.components import Bucket, Document, BucketManager, GracefulShutdown
@@ -53,11 +53,17 @@ class WorkerServer:
                 return jsonify("Shutdown in progress, please retry"), 410
 
             self.counter_create_request.inc()
+            raw_data = request.data
 
-            record = json.loads(request.data)
-            doc = Document(channel=channel, version=version, payload=record)
-            self.bucket_manager.push(doc)
-            return jsonify("ok"), 201
+            try:
+                record = json.loads(raw_data)
+                doc = Document(channel=channel, version=version, payload=record)
+                self.bucket_manager.push(doc)
+                return jsonify("ok"), 201
+            except Exception as e:
+                logger.error("Invalid document string received: %s", raw_data)
+                logger.error("Something wrong on unmarshalling: %s", e)
+                return jsonify("ko: something wrong"), 400
 
         @app.errorhandler(404)
         def page_not_found(e):

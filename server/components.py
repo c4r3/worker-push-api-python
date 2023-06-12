@@ -1,5 +1,4 @@
 import json
-import queue
 import signal
 import threading
 import time
@@ -27,7 +26,7 @@ class Document:
     def __str__(self) -> str:
         return f'Document: {self.data}'
 
-    #customize the serialization if needed
+    # customize the serialization if needed
     def serialize(self):
         return json.dumps(self.data)
 
@@ -99,11 +98,12 @@ class Bucket:
 
 class BucketManager:
 
+    HEARTBEAT_TIMEOUT_SEC = 1.0
+
     def __init__(self, size: int, bucket_timeout_in_seconds: int):
         self.is_alive = True
         self.bucket = Bucket(size=size)
         self.bucket_timeout_in_seconds = bucket_timeout_in_seconds
-        self.q = queue.Queue()
 
     def kill(self):
         self.is_alive = False
@@ -118,13 +118,10 @@ class BucketManager:
                 self.bucket.flush()
                 continue
 
-            if not self.q.empty():
-                doc = self.q.get_nowait()
-                if doc is not None:
-                    self.bucket.create(doc)
-
-            time.sleep(1.0)
-            logger.info("Heart beat from Bucket Manager, Bucket age %d [s]", self._bucket_age_in_seconds())
+            time.sleep(self.HEARTBEAT_TIMEOUT_SEC)
+            logger.info("Heartbeat from Bucket Manager, Bucket amount %d[doc] and age %d[s]",
+                        self._bucket_amount(),
+                        self._bucket_age_in_seconds())
 
         if len(self.bucket.cache) > 0:
             logger.debug("Teardown in progress, flushing leftovers")
@@ -134,13 +131,16 @@ class BucketManager:
         logger.info("Bucket manager closed, bye...")
 
     def push(self, doc: Document):
-        self.q.put(doc)
+        self.bucket.create(doc)
 
     def _bucket_age_in_seconds(self) -> int:
         if len(self.bucket.cache) > 0:
             return (datetime.now() - self.bucket.creation_time).seconds
         else:
             return -1
+
+    def _bucket_amount(self) -> int:
+        return len(self.bucket.cache)
 
 
 class GracefulShutdown:
