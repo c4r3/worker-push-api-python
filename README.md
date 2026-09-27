@@ -1,5 +1,11 @@
-# worker-push-api-python
-An example of reliable Push API microservice written in Python. This implementation can be used as a starting point to develop a production ready worker for the Ingestion layer of a Dataplatform.
-The componet implementa a bucket approach to collect the payload received via a PUT Rest Api. The bucket will be flushed on overflow and/or overtime reached.
-The model is equipped with several fields for data lineage and data-plumbing and the write (on the Datalake) is schemaless (schema on read).
-The component is also dockerized, the Dockerfile is available, and there are all the step required for the provisioning on Kubernetes and the monitoring with Prometheus and Grafana.
+# Reliable Push-API Ingestion Microservice (Python)
+
+A reference implementation of a reliable push-API ingestion worker in Python, designed as the starting point for a production-ready ingestion layer of a data platform.
+
+Ingestion: payloads received through a REST PUT endpoint.
+Buffering: a bucket-based micro-batching strategy, flushed on size threshold or time window, whichever comes first. This balances throughput against latency and reduces small-file writes on the data lake.
+Data governance: each record carries lineage and data-plumbing metadata, so every event can be traced back to its origin.
+Storage: schemaless writes to the data lake (schema-on-read), decoupling ingestion from downstream schema evolution.
+Operations: Dockerfile included, step-by-step Kubernetes provisioning, and monitoring with Prometheus and Grafana.
+
+Stack: Python, REST, Docker, Kubernetes, Prometheus, Grafana, data lake.
